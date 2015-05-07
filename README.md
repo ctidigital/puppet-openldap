@@ -114,6 +114,11 @@ openldap::server::module { 'memberof':
 openldap::server::overlay { 'memberof on dc=example,dc=com':
   ensure => present,
 }
+
+openldap::server::overlay { 'syncrepl on dc=example,dc=com':
+  ensure => present,
+  additional => [ 'olcSyncProvConfig' ],
+}
 ```
 
 ###Configuring ACPs/ACLs
@@ -300,6 +305,16 @@ Specify a password (or hash of the password) for the rootdn.
 ###Resource: openldap::server::module
 
 ###Resource: openldap::server::overlay
+
+This resource allows you to manage the overlays on an OpenLDAP database
+
+####`title`
+Specify the overlay on suffix
+
+####`additional`
+Specify additional objectClass entries for the overlay
+This is used to add the olcSyncProvConfig objectClass entry for the
+syncprov overlay.
 
 ###Resource: openldap::server::schema
 

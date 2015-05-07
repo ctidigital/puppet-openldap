@@ -3,6 +3,7 @@ define openldap::server::overlay(
   $ensure  = undef,
   $overlay = regsubst($title, '^(\S+)\s+on\s+(\S+)$', '\1'),
   $suffix  = regsubst($title, '^(\S+)\s+on\s+(\S+)$', '\2'),
+  $addition = undef,
 ) {
 
   if ! defined(Class['openldap::server']) {
@@ -24,5 +25,6 @@ define openldap::server::overlay(
     provider => $::openldap::server::provider,
     overlay  => $overlay,
     suffix   => $suffix,
+    additional => $addition,
   }
 }

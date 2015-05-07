@@ -55,6 +55,9 @@ Puppet::Type.type(:openldap_overlay).provide(:olc) do
     t << "objectClass: olcConfig\n"
     t << "objectClass: olcOverlayConfig\n"
     t << "objectClass: olcMemberOf\n" if resource[:overlay] == 'memberof'
+    resource[:additional].each do | objClass |
+      t << "objectClass: #{objClass}\n"
+    end
     t << "olcOverlay: #{resource[:overlay]}\n"
     t.close
     Puppet.debug(IO.read t.path)
@@ -84,11 +87,20 @@ Puppet::Type.type(:openldap_overlay).provide(:olc) do
       'cn=config',
       '-H',
       "ldap:///???(olcDatabase=#{database})"
-    ).split("\n").collect do |line|
-      if line =~ /^olcSuffix: /
-        return line.split(' ')[1]
+    ).split("\n\n").collect do |para|
+      db = nil
+      suffix = nil
+      para.split("\n").collect do |line|
+        case line
+        when /^dn: /
+          db = line.match(/^dn:\s+olcDatabase=([^,]+),cn=config$/).captures
+        when /^olcSuffix: /
+          suffix = line.split(' ')[1]
+        end
+      end
+      if db[0] == database
+        return suffix
       end
     end
   end
-
 end

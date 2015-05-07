@@ -5,7 +5,9 @@ class openldap::client::utils(
     'RedHat' => 'openldap-clients',
   },
 ) {
-  package { $package:
-    ensure => present,
+  if ! defined(Package[$package]) {
+    package { $package:
+      ensure => present,
+    }
   }
 }

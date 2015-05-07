@@ -19,6 +19,10 @@ Puppet::Type.newtype(:openldap_overlay) do
     desc "The suffix to which the overlay applies"
   end
 
+  newparam(:additional, :namevar => true) do
+    desc "The additional Object Class to which the overlay applies"
+  end
+
   def self.title_patterns
     [
       [
