@@ -25,7 +25,7 @@ module      | Y             | N
 overlay     | Y             | N
 access      | Y             | N
 index       | Y             | N
-schema      | N             | N
+schema      | Y             | N
 
 Usage
 -----
@@ -144,6 +144,18 @@ openldap::server::access {
     access => 'write';
   'to * by * on dc=example,dc=com':
     access => 'read';
+}
+```
+
+###Configuring Schema
+
+```puppet
+openldap::server::schema {
+  'samba':
+     ensure  => present,
+     path    => '/etc/ldap/schema/samba.schema',
+     before  => Openldap::Server::Schema['core-fd'],
+     require => Openldap::Server::Schema['inetorgperson'],
 }
 ```
 
@@ -317,6 +329,14 @@ This is used to add the olcSyncProvConfig objectClass entry for the
 syncprov overlay.
 
 ###Resource: openldap::server::schema
+
+This resource allows you to add schema files to the OpenLDAP server
+
+####`name`
+The name of the schema to insert
+
+####`path`
+The path to the .schema file. If not set, defaults to /etc/ldap/schema/$name.schema
 
 ###Function: openldap_password
 
