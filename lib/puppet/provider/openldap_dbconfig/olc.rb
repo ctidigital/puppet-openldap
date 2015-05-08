@@ -11,29 +11,60 @@ Puppet::Type.type(:openldap_dbconfig).provide(:olc) do
   mk_resource_methods
 
   def self.instances(suffix)
+    i = []
+    Puppet.debug "dbconfig instances for #{suffix}\n"
     db = slapcat(
       '-b',
       'cn=config',
       '-H',
-      'ldap:///???(&(objectClass=olcDatabaseConfig)(|(objectClass=olcBdbConfig)(objectClass=olcHdbConfig)(objectClass=olcMdbConfig))(olcSuffix=#{suffix}))'
+      "ldap:///???(&(objectClass=olcDatabaseConfig)(|(objectClass=olcBdbConfig)(objectClass=olcHdbConfig)(objectClass=olcMdbConfig))(olcSuffix=#{suffix}))"
+#      "ldap:///???(&(objectClass=olcDatabaseConfig)(|(objectClass=olcBdbConfig)(objectClass=olcHdbConfig)(objectClass=olcMdbConfig)))"
     ).split("\n\n").collect do |para|
-      
-      para.gsub("\n ","")split("\n").select{|e| e =~ /^olc/}.collect do |line|
-      name, value = line.split(': ')
-      # initialize @property_hash
-      new(
-        :name   => name[3, name.length],
-        :ensure => :present,
-        :value  => value
-      )
+      dn = nil
+      para.gsub("\n ","").split("\n").collect do |line|
+        case line
+        when /^dn: /
+          dn = line.split(": ")[1]
+        when /^olc/
+          name, value = line.split(': ')
+          Puppet.debug "dbconfig found #{name} = '#{value}\n"
+          # initialize @property_hash
+          i << new(
+            :name   => name[3, name.length],
+            :ensure => :present,
+            :value  => value
+          )
+        end
+      end
     end
+    i
   end
 
   def self.prefetch(resources)
-    items = instances(resources[:suffix])
+    items = {}
+    resources.keys.each do |n|
+      sffx = resources[n][:suffix]
+      if ! items.has_key?(sffx)
+        items[sffx] = instances(sffx)
+      end
+    end
     resources.keys.each do |name|
-      if provider = items.find{ |item| item.name == name }
+      sffx = resources[name][:suffix]
+      if provider = items[sffx].find{ |item| item.name == name }
         resources[name].provider = provider
+      end
+    end
+  end
+
+  def getDn(suffix)
+    slapcat(
+      '-b',
+      'cn=config',
+      '-H',
+      "ldap:///???(olcSuffix=#{suffix})"
+    ).split("\n").collect do |line|
+      if line =~ /^dn: /
+        return line.split(' ')[1]
       end
     end
   end
@@ -44,10 +75,11 @@ Puppet::Type.type(:openldap_dbconfig).provide(:olc) do
 
   def create
     t = Tempfile.new('openldap_db_config')
-    t << "dn: cn=config\n"
-    t << "add: olc#{resource[:name]}\n"
-    t << "olc#{resource[:name]}: #{resource[:value]}\n"
+    t << "dn: #{getDn(resource[:suffix])}\n"
+    t << "add: olc#{resource[:target]}\n"
+    t << "olc#{resource[:target]}: #{resource[:value]}\n"
     t.close
+    Puppet.debug "dbconfig create resource\n"
     Puppet.debug(IO.read t.path)
     begin
       ldapmodify('-Y', 'EXTERNAL', '-H', 'ldapi:///', '-f', t.path)
@@ -59,8 +91,8 @@ Puppet::Type.type(:openldap_dbconfig).provide(:olc) do
 
   def destroy
     t = Tempfile.new('openldap_db_config')
-    t << "dn: cn=config\n"
-    t << "delete: olc#{name}\n"
+    t << "dn: #{getDn(suffix)}\n"
+    t << "delete: olc#{target}\n"
     t.close
     Puppet.debug(IO.read t.path)
     begin
@@ -73,9 +105,9 @@ Puppet::Type.type(:openldap_dbconfig).provide(:olc) do
 
   def value=(value)
     t = Tempfile.new('openldap_db_config')
-    t << "dn: cn=config\n"
-    t << "replace: olc#{name}\n"
-    t << "olc#{name}: #{value}\n"
+    t << "dn: #{getDn(suffix)}\n"
+    t << "replace: olc#{target}\n"
+    t << "olc#{target}: #{value}\n"
     t.close
     Puppet.debug(IO.read t.path)
     begin
