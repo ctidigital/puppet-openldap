@@ -55,9 +55,7 @@ Puppet::Type.type(:openldap_overlay).provide(:olc) do
     t << "objectClass: olcConfig\n"
     t << "objectClass: olcOverlayConfig\n"
     t << "objectClass: olcMemberOf\n" if resource[:overlay] == 'memberof'
-    resource[:additional].each do | objClass |
-      t << "objectClass: #{objClass}\n"
-    end
+    t << "objectClass: olcSyncProvConfig\n" if resource[:overlay] == 'syncprov'
     t << "olcOverlay: #{resource[:overlay]}\n"
     t.close
     Puppet.debug(IO.read t.path)
