@@ -11,6 +11,7 @@ Puppet::Type.type(:openldap_overlay).provide(:olc) do
   mk_resource_methods
 
   def self.instances
+    i = []
     slapcat(
       '-b',
       'cn=config',
@@ -26,13 +27,14 @@ Puppet::Type.type(:openldap_overlay).provide(:olc) do
           suffix = getSuffix(database)
 	end
       end
-      new(
+      i << new(
         :name    => "#{overlay} on #{suffix}",
         :ensure  => :present,
         :overlay => overlay,
         :suffix  => suffix
       )
     end
+    i
   end
 
   def self.prefetch(resources)
@@ -55,9 +57,7 @@ Puppet::Type.type(:openldap_overlay).provide(:olc) do
     t << "objectClass: olcConfig\n"
     t << "objectClass: olcOverlayConfig\n"
     t << "objectClass: olcMemberOf\n" if resource[:overlay] == 'memberof'
-    resource[:additional].each do | objClass |
-      t << "objectClass: #{objClass}\n"
-    end
+    t << "objectClass: olcSyncProvConfig\n" if resource[:overlay] == 'syncprov'
     t << "olcOverlay: #{resource[:overlay]}\n"
     t.close
     Puppet.debug(IO.read t.path)

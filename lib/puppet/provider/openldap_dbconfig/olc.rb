@@ -26,11 +26,12 @@ Puppet::Type.type(:openldap_dbconfig).provide(:olc) do
         when /^dn: /
           dn = line.split(": ")[1]
         when /^olc/
-          name, value = line.split(': ')
-          Puppet.debug "dbconfig found #{name} = '#{value}\n"
+          name, dummy, pos, value = line.match('^olc(\S+): ({(\d+)})?(.*)$').captures
+          Puppet.debug "dbconfig found #{name} = '#{value}'\n"
           # initialize @property_hash
           i << new(
-            :name   => name[3, name.length],
+            :name   => "#{name} #{value} on #{suffix}",
+            :position => pos,
             :ensure => :present,
             :value  => value
           )
@@ -49,8 +50,10 @@ Puppet::Type.type(:openldap_dbconfig).provide(:olc) do
       end
     end
     resources.keys.each do |name|
+      Puppet.debug "dbconfig: Resource : '#{name}'"
       sffx = resources[name][:suffix]
       if provider = items[sffx].find{ |item| item.name == name }
+        Puppet.debug "dbconfig: Provider : '#{provider}'"
         resources[name].provider = provider
       end
     end
@@ -70,6 +73,7 @@ Puppet::Type.type(:openldap_dbconfig).provide(:olc) do
   end
 
   def exists?
+    Puppet.debug "dbconfig:exists #{@property_hash[:name]}"
     @property_hash[:ensure] == :present
   end
 

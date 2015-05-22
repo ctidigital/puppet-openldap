@@ -1,10 +1,10 @@
 # See README.md for details.
 define openldap::server::dbconfig(
-  $ensure = undef,  
-  $target = regsubst($title, '^(\S+)\s+on\s+(\S+)$', '\1'),
-  $suffix = regsubst($title, '^(\S+)\s+on\s+(\S+)$', '\2'),
-  $value,
+  $ensure = undef
 ) {
+  $target = regsubst($title, '^(\S+)\s+(.+)?\s+on\s+(\S+)$', '\1')
+  $value = regsubst($title,  '^(\S+)\s+(.+)?\s+on\s+(\S+)$', '\2')
+  $suffix = regsubst($title, '^(\S+)\s+(.+)?\s+on\s+(\S+)$', '\3')
 
   if ! defined(Class['openldap::server']) {
     fail 'class ::openldap::server has not been evaluated'
